@@ -14,18 +14,12 @@ func AddNote() {
 	content, _ := Reader.ReadString('\n')
 	content = strings.TrimSpace(content)
 
-	notes := LoadNotes()
-	newID := getMaxID(notes) + 1
-
 	newNote := Note{
-		ID:      newID,
 		Title:   title,
 		Content: content,
 	}
 
-	notes = append(notes, newNote)
-	err := SaveNotes(notes)
-
+	err := DB.Create(&newNote).Error
 	if err != nil {
 		fmt.Println("Ошибка при добавлении заметки: ", err)
 	} else {

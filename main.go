@@ -14,8 +14,8 @@ var reader = bufio.NewReader(os.Stdin)
 const maxactions = 8
 
 func main() {
+	notes.InitDB()
 	notes.Reader = reader
-	notes.InitializeNotesFile()
 	actions()
 	for true {
 		num := chooseAction()

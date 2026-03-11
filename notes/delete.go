@@ -6,36 +6,24 @@ import (
 	"strings"
 )
 
-func DeleteNote(i int) {
-	notes := LoadNotes()
-	found := false
-
-	for idx, note := range notes {
-		if note.ID == i {
-			notes = append(notes[:idx], notes[idx+1:]...)
-			found = true
-			break
-		}
-	}
-
-	if !found {
-		if !found {
-			fmt.Printf("❌ Заметка с номером %d не найдена.\n", i)
-			return
-		}
-	}
-
-	err := SaveNotes(notes)
-
-	if err != nil {
-		fmt.Println("Ошибка при удалении заметки: ", err)
+func DeleteNote(id uint) {
+	result := DB.Delete(&Note{}, id)
+	if result.Error != nil {
+		fmt.Println("Ошибка при удалении заметки:", result.Error)
+	} else if result.RowsAffected == 0 {
+		fmt.Printf("❌ Заметка с номером %d не найдена.\n", id)
 	} else {
 		fmt.Println("Заметка успешно удалена!")
 	}
 }
 
 func DeleteNoteByChoice() {
-	notes := LoadNotes()
+	var notes []Note
+	result := DB.Find(&notes)
+	if result.Error != nil {
+		fmt.Println("Ошибка загрузки заметок:", result.Error)
+		return
+	}
 
 	if len(notes) == 0 {
 		fmt.Println("❌ Доступный заметок нет")
@@ -63,16 +51,16 @@ func DeleteNoteByChoice() {
 	approve = strings.TrimSpace(approve)
 
 	if approve == "y" || approve == "Y" {
-		DeleteNote(id)
+		DeleteNote(uint(id))
 	} else {
 		fmt.Println("Удаление отменено")
 	}
-
 }
 
 func DeleteAllNotes() {
-	notes := LoadNotes()
-	if len(notes) == 0 {
+	var count int64
+	DB.Model(&Note{}).Count(&count)
+	if count == 0 {
 		fmt.Println("Заметок нет. Удалять нечего. ¯\\_(ツ)_/¯")
 		return
 	}
@@ -89,12 +77,10 @@ func DeleteAllNotes() {
 }
 
 func DeleteAll() {
-	notes := make([]Note, 0)
-	err := SaveNotes(notes)
-
-	if err != nil {
-		fmt.Println("Ошибка при удалении заметок: ", err)
+	result := DB.Unscoped().Delete(&Note{})
+	if result.Error != nil {
+		fmt.Println("Ошибка при удалении заметок:", result.Error)
 	} else {
-		fmt.Println("Заметки успешно удалены!")
+		fmt.Printf("Удалено %d заметок!\n", result.RowsAffected)
 	}
 }
