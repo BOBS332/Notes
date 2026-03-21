@@ -7,9 +7,9 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
-// TODO: Очищать кэш не по дате его создания, а по дате последнего доступа. И при каждом доступе обновлять эту дату.
 var reader = bufio.NewReader(os.Stdin)
 
 const maxactions = 9
@@ -19,12 +19,15 @@ func main() {
 	notes.Reader = reader
 	notes.InitializeCacheFile()
 	actions()
+	go func() {
+		time.Sleep(notes.GetCacheTTL())
+		for {
+			notes.ClearNoteFromCache()
+			time.Sleep(10 * time.Second)
+		}
+	}()
 	for true {
 		num := chooseAction()
-
-		go func() {
-			notes.ClearNoteFromCache()
-		}()
 
 		switch num {
 		case 0:

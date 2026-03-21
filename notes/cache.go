@@ -1,7 +1,15 @@
 package notes
 
 import (
+	"sync"
 	"time"
+)
+
+var (
+	cache           = make(map[uint]Note)
+	cacheTTL        = 10 * time.Minute
+	isCacheClearing bool
+	cacheStateMu    sync.RWMutex
 )
 
 func GetNoteFromCache(id uint) (Note, bool) {
@@ -35,7 +43,7 @@ func RemoveAllNotesFromCache() {
 
 func isNoteExpired(note Note) bool {
 	duration := time.Since(note.LastCall)
-	return duration > cacheTime
+	return duration > cacheTTL
 }
 
 func deleteExpiredNote() bool {
@@ -62,16 +70,29 @@ func deleteExpiredNote() bool {
 }
 
 func ClearNoteFromCache() {
-	// Сигнализируем о начале очистки устаревших заметок
-	signalCacheClearing(true)
+	setCacheClearingState(true)
 
 	for deleteExpiredNote() {
 		time.Sleep(3 * time.Second)
 	}
 
-	// Даем время на обновление состояния всем горутинам
 	time.Sleep(100 * time.Millisecond)
 
-	// Сигнализируем об окончании очистки устаревших заметок
-	signalCacheClearing(false)
+	setCacheClearingState(false)
+}
+
+func ShouldBypassCache() bool {
+	cacheStateMu.RLock()
+	defer cacheStateMu.RUnlock()
+	return isCacheClearing
+}
+
+func setCacheClearingState(clearing bool) {
+	cacheStateMu.Lock()
+	defer cacheStateMu.Unlock()
+	isCacheClearing = clearing
+}
+
+func GetCacheTTL() time.Duration {
+	return cacheTTL
 }

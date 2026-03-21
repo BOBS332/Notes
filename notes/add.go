@@ -28,7 +28,7 @@ func AddNote() {
 }
 
 func AutoAdd() {
-	for i := 0; i < 3; i++ {
+	for i := range [3]int{} {
 		title := fmt.Sprintf("Автоматический заголовок %d", i+1)
 		content := fmt.Sprintf("Автоматическое содержание %d", i+1)
 

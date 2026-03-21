@@ -81,13 +81,15 @@ func ShowAvailableNotes() (bool, error) {
 	}
 
 	if len(notes) == 0 {
-		fmt.Println("❌ Доступный заметок нет")
+		fmt.Println("❌ Доступных заметок нет")
 		return false, nil
 	}
+
 	fmt.Println("\n========== ДОСТУПНЫЕ ЗАМЕТКИ ==========")
 	for _, note := range notes {
 		fmt.Printf("[%d] %s\n", note.ID, note.Title)
 	}
 	fmt.Println("=======================================")
+
 	return true, nil
 }

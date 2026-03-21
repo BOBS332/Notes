@@ -16,8 +16,8 @@ func DeleteNote(id uint) {
 		fmt.Printf("❌ Заметка с номером %d не найдена.\n", id)
 	} else {
 		fmt.Println("Заметка успешно удалена!")
+		RemoveNoteFromCache(id)
 	}
-	RemoveNoteFromCache(id)
 }
 
 func DeleteNoteByChoice() {

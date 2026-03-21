@@ -3,28 +3,24 @@ package notes
 import (
 	"fmt"
 	"log"
-	"os"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 func InitDB() {
-	dsn := os.Getenv("DATABASE_URL")
-	if dsn == "" {
-		dsn = "host=localhost user=postgres password=newpassword dbname=test port=5432 sslmode=disable"
-	}
+	dsn := "host=localhost user=postgres password=newpassword dbname=test port=5432 sslmode=disable"
 
 	var err error
 	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		log.Fatal("Failed to connect to database:", err)
+		log.Fatal("Ошибка при подключении к базе данных:", err)
 	}
 
 	err = DB.AutoMigrate(&Note{})
 	if err != nil {
-		log.Fatal("Failed to migrate database:", err)
+		log.Fatal("Ошибка при миграции базы данных:", err)
 	}
 
-	fmt.Println("Database connected and migrated!")
+	fmt.Println("✅ Подключение к базе данных успешно!")
 }
