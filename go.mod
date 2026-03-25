@@ -1,6 +1,8 @@
-module notes
+module learninggo
 
 go 1.25.7
+
+replace learninggo/notes => ./notes
 
 require (
 	github.com/jackc/pgpassfile v1.0.0 // indirect
