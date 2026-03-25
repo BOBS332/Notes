@@ -4,15 +4,13 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-
-	"gorm.io/gorm"
 )
 
 func DeleteNote(id uint) {
-	result := DB.Delete(&Note{}, id)
-	if result.Error != nil {
-		fmt.Println("Ошибка при удалении заметки:", result.Error)
-	} else if result.RowsAffected == 0 {
+	err, deletedCount := DeleteNoteFromDB(id)
+	if err != nil {
+		fmt.Println("Ошибка при удалении заметки:", err)
+	} else if deletedCount == 0 {
 		fmt.Printf("❌ Заметка с номером %d не найдена.\n", id)
 	} else {
 		fmt.Println("Заметка успешно удалена!")
@@ -53,7 +51,11 @@ func DeleteNoteByChoice() {
 
 func DeleteAllNotes() {
 	var count int64
-	DB.Model(&Note{}).Count(&count)
+	count, err := GetNotesCountFromDB()
+	if err != nil {
+		fmt.Println("Ошибка при подсчете заметок:", err)
+		return
+	}
 	if count == 0 {
 		fmt.Println("Заметок нет. Удалять нечего. ¯\\_(ツ)_/¯")
 		return
@@ -71,11 +73,11 @@ func DeleteAllNotes() {
 }
 
 func DeleteAll() {
-	result := DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&Note{})
-	if result.Error != nil {
-		fmt.Println("Ошибка при удалении заметок:", result.Error)
+	err, deletedCount := DeleteAllNotesFromDB()
+	if err != nil {
+		fmt.Println("Ошибка при удалении заметок:", err)
 	} else {
-		fmt.Printf("Удалено %d заметок!\n", result.RowsAffected)
+		fmt.Printf("Успешно удалено %d заметок!\n", deletedCount)
 		RemoveAllNotesFromCache()
 	}
 }

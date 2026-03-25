@@ -19,7 +19,7 @@ func AddNote() {
 		Content: content,
 	}
 
-	err := DB.Create(&newNote).Error
+	err := AddNoteToDB(newNote)
 	if err != nil {
 		fmt.Println("Ошибка при добавлении заметки: ", err)
 	} else {
@@ -37,7 +37,7 @@ func AutoAdd() {
 			Content: content,
 		}
 
-		err := DB.Create(&newNote).Error
+		err := AddNoteToDB(newNote)
 		if err != nil {
 			fmt.Println("Ошибка при добавлении заметки: ", err)
 		} else {

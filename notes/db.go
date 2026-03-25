@@ -24,3 +24,42 @@ func InitDB() {
 
 	fmt.Println("✅ Подключение к базе данных успешно!")
 }
+
+func AddNoteToDB(note Note) error {
+	return DB.Create(&note).Error
+}
+
+func GetNoteFromDB(id uint, note *Note) error {
+	result := DB.First(note, id)
+	return result.Error
+}
+
+func GetAllNotesFromDB() ([]Note, error) {
+	var notes []Note
+	result := DB.Find(&notes)
+	return notes, result.Error
+}
+
+func UpdateNoteInDB(note Note) error {
+	return DB.Save(&note).Error
+}
+
+func DeleteNoteFromDB(id uint) (error, int) {
+	result := DB.Delete(&Note{}, id)
+	return result.Error, int(result.RowsAffected)
+}
+
+func DeleteAllNotesFromDB() (error, int) {
+	result := DB.Where("1 = 1").Delete(&Note{})
+	return result.Error, int(result.RowsAffected)
+}
+
+func SaveNoteToDB(note Note) error {
+	return DB.Save(&note).Error
+}
+
+func GetNotesCountFromDB() (int64, error) {
+	var count int64
+	result := DB.Model(&Note{}).Count(&count)
+	return count, result.Error
+}

@@ -5,9 +5,9 @@ import "fmt"
 func ShowAll() {
 	var notes []Note
 
-	result := DB.Find(&notes)
-	if result.Error != nil {
-		fmt.Println("Ошибка загрузки заметок:", result.Error)
+	notes, err := GetAllNotesFromDB()
+	if err != nil {
+		fmt.Println("Ошибка загрузки заметок:", err)
 		return
 	}
 
@@ -37,8 +37,8 @@ func ShowNote(id uint) {
 	}
 
 	if !isFromCache {
-		result := DB.First(&note, id)
-		if result.Error != nil {
+		err := GetNoteFromDB(id, &note)
+		if err != nil {
 			fmt.Printf("❌ Заметка с номером %d не найдена.\n", id)
 			return
 		}
@@ -74,10 +74,10 @@ func ShowNoteByChoice() {
 func ShowAvailableNotes() (bool, error) {
 	var notes []Note
 
-	result := DB.Find(&notes)
-	if result.Error != nil {
-		fmt.Println("Ошибка загрузки заметок:", result.Error)
-		return false, result.Error
+	notes, err := GetAllNotesFromDB()
+	if err != nil {
+		fmt.Println("Ошибка загрузки заметок:", err)
+		return false, err
 	}
 
 	if len(notes) == 0 {

@@ -35,8 +35,8 @@ func UpdateNote(id uint) {
 	}
 
 	if !isFromCache {
-		result := DB.First(&note, id)
-		if result.Error != nil {
+		err := GetNoteFromDB(id, &note)
+		if err != nil {
 			fmt.Printf("❌ Заметка с номером %d не найдена.\n", id)
 			return
 		}
@@ -55,9 +55,9 @@ func UpdateNote(id uint) {
 	approve = strings.TrimSpace(approve)
 
 	if approve == "y" || approve == "Y" {
-		result := DB.Save(&note)
-		if result.Error != nil {
-			fmt.Println("Ошибка при обновлении заметки:", result.Error)
+		err := SaveNoteToDB(note)
+		if err != nil {
+			fmt.Println("Ошибка при обновлении заметки:", err)
 		} else {
 			fmt.Println("Заметка успешно обновлена!")
 			RemoveNoteFromCache(id)

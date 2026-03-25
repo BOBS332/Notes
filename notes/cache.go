@@ -96,3 +96,6 @@ func setCacheClearingState(clearing bool) {
 func GetCacheTTL() time.Duration {
 	return cacheTTL
 }
+func SetCacheTTL(ttl time.Duration) {
+	cacheTTL = ttl
+}
