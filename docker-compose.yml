@@ -4,8 +4,8 @@ services:
     container_name: notes_db
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: notes_password
-      POSTGRES_DB: notes_db
+      POSTGRES_PASSWORD: newpassword
+      POSTGRES_DB: test
     ports:
       - "5433:5432"
     volumes:
@@ -13,7 +13,7 @@ services:
     networks:
       - notes_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U notes_user"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -30,8 +30,8 @@ services:
       DB_HOST: db
       DB_PORT: 5432
       DB_USER: postgres
-      DB_PASSWORD: notes_password
-      DB_NAME: notes_db
+      DB_PASSWORD: newpassword
+      DB_NAME: test
     networks:
       - notes_network
     stdin_open: true

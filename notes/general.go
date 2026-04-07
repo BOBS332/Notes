@@ -2,20 +2,21 @@ package notes
 
 import (
 	"bufio"
+	"database/sql"
 	"sync"
 	"time"
-
-	"gorm.io/gorm"
 )
 
-var DB *gorm.DB
+var DB *sql.DB
 var Reader *bufio.Reader
 var mu sync.RWMutex
 
 type Note struct {
-	gorm.Model
-	ID       uint `gorm:"primaryKey"`
-	LastCall time.Time
-	Title    string `gorm:"not null"`
-	Content  string `gorm:"not null"`
+	ID        uint
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt sql.NullTime
+	LastCall  time.Time
+	Title     string
+	Content   string
 }
