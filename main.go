@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 var reader = bufio.NewReader(os.Stdin)
@@ -18,14 +20,86 @@ func main() {
 	notes.InitDB()
 	notes.Reader = reader
 	notes.InitializeCacheFile()
+
+	// Запускаем очистку кэша в отдельной goroutine
+	go startCacheCleaner()
+
+	// Спрашиваем пользователя - запустить CLI или API сервер
+	fmt.Println(`
+╔════════════════════════════════════╗
+║     Выберите режим запуска:        ║
+║  1 - CLI (интерактивный режим)     ║
+║  2 - REST API (веб-сервер на :8080)║
+║  3 - Оба режима (CLI + API)        ║
+╚════════════════════════════════════╝
+	`)
+
+	fmt.Print("Ваш выбор: ")
+	choice, _ := reader.ReadString('\n')
+	choice = strings.TrimSpace(choice)
+
+	switch choice {
+	case "1":
+		startCLI()
+	case "2":
+		startAPIServer()
+	case "3":
+		go startAPIServer()
+		startCLI()
+	default:
+		fmt.Println("❌ Неверный выбор! Запускаю CLI...")
+		startCLI()
+	}
+}
+
+func startCacheCleaner() {
+	time.Sleep(notes.GetCacheTTL())
+	for {
+		notes.ClearNoteFromCache()
+		time.Sleep(10 * time.Second)
+	}
+}
+
+func startAPIServer() {
+	// Используем ReleaseMode для минимального вывода
+	gin.SetMode(gin.ReleaseMode)
+	router := gin.Default()
+
+	// Группа маршрутов для API
+	api := router.Group("/api")
+	{
+		// GET все заметки
+		api.GET("/notes", notes.GetAllNotes)
+		// POST новую заметку
+		api.POST("/notes", notes.CreateNote)
+		// GET заметку по ID
+		api.GET("/notes/:id", notes.GetNoteByID)
+		// PUT обновить заметку
+		api.PUT("/notes/:id", notes.UpdateNoteAPI)
+		// DELETE удалить заметку
+		api.DELETE("/notes/:id", notes.DeleteNoteByID)
+		// DELETE удалить все заметки
+		api.DELETE("/notes", notes.DeleteAllNotesHandler)
+		// GET статистика
+		api.GET("/stats", notes.GetStats)
+	}
+
+	fmt.Println("🚀 REST API сервер запущен на http://localhost:8080")
+	fmt.Println("📚 Доступные endpoints:")
+	fmt.Println("  GET    /api/notes          - получить все заметки")
+	fmt.Println("  POST   /api/notes          - создать новую заметку")
+	fmt.Println("  GET    /api/notes/:id      - получить заметку по ID")
+	fmt.Println("  PUT    /api/notes/:id      - обновить заметку")
+	fmt.Println("  DELETE /api/notes/:id      - удалить заметку")
+	fmt.Println("  DELETE /api/notes          - удалить все заметки")
+	fmt.Println("  GET    /api/stats          - получить статистику")
+	fmt.Println()
+
+	router.Run(":8080")
+}
+
+func startCLI() {
 	actions()
-	go func() {
-		time.Sleep(notes.GetCacheTTL())
-		for {
-			notes.ClearNoteFromCache()
-			time.Sleep(10 * time.Second)
-		}
-	}()
 	for true {
 		num := chooseAction()
 
@@ -53,7 +127,6 @@ func main() {
 			os.Exit(0)
 		}
 	}
-
 }
 
 func actions() {
