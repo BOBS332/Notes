@@ -1,0 +1,31 @@
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Build outputs
+/backend/dist
+/frontend/dist
+/frontend/build
+
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Cache
+*.log
+.cache
+cache.json
+
+# Docker
+.dockerignore
+
+# OS
+Thumbs.db

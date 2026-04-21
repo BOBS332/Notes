@@ -1,23 +1,54 @@
-# 📝 Notes Application - REST API Ready
+# 📝 Notes Application - Full Stack
 
-Приложение для управления заметками с REST API и CLI интерфейсом.
+Полнофункциональное приложение для управления заметками: REST API на Go + React TypeScript фронтенд.
 
-## 🎯 Быстрый старт
+## 📁 Структура проекта
 
-### 1. Запустить REST API сервер
-```bash
-./start-api.sh
 ```
-Сервер запустится на `http://localhost:8080`
-
-### 2. Запустить интерактивный CLI режим
-```bash
-./start-cli.sh
+LearningGo/
+├── backend/          ← Go REST API (порт 8080)
+│   ├── main.go
+│   ├── notes/        ← Бизнес-логика
+│   ├── Dockerfile
+│   ├── API_GUIDE.md
+│   └── ...
+├── frontend/         ← React TypeScript (порт 3000)
+│   ├── src/
+│   ├── public/
+│   ├── Dockerfile
+│   └── package.json
+├── docker-compose.yml ← Оркестрация всех сервисов
+└── README.md
 ```
 
-### 3. Запустить оба режима одновременно
+## 🚀 Быстрый старт
+
+### С Docker (рекомендуется)
 ```bash
-./start-all.sh
+docker-compose up -d
+```
+- Backend: `http://localhost:8080`
+- Frontend: `http://localhost:3000`
+- PostgreSQL: `localhost:5433`
+
+### Разработка (локально)
+
+**Backend:**
+```bash
+cd backend
+./start-api.sh          # Запустить API сервер
+# или
+./rebuild.sh            # Пересобрать и запустить
+```
+
+**Frontend:**
+```bash
+cd frontend
+npm install
+npm start               # Запустить dev сервер на :3000
+```
+
+## 📚 REST API Endpoints
 ```
 API будет на порту 8080, CLI будет ждать команд
 

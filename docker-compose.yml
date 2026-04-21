@@ -18,11 +18,11 @@ services:
       timeout: 5s
       retries: 5
 
-  app:
+  backend:
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile
-    container_name: notes_app
+    container_name: notes_backend
     depends_on:
       db:
         condition: service_healthy
@@ -32,10 +32,25 @@ services:
       DB_USER: postgres
       DB_PASSWORD: newpassword
       DB_NAME: test
+      APP_MODE: "2"
+    ports:
+      - "8080:8080"
     networks:
       - notes_network
     stdin_open: true
     tty: true
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: notes_frontend
+    ports:
+      - "3000:3000"
+    networks:
+      - notes_network
+    depends_on:
+      - backend
 
 volumes:
   postgres_data:
