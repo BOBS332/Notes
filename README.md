@@ -215,7 +215,3 @@ function Notes() {
 
 - [API_GUIDE.md](API_GUIDE.md) — подробное описание всех endpoints
 - [API_TESTED.md](API_TESTED.md) — результаты тестирования
-
-## 🚀 Готово к использованию!
-
-Ваши "ручки" (REST endpoints) полностью готовы для интеграции с фронтенд приложением!
