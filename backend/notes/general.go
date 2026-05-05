@@ -19,4 +19,12 @@ type Note struct {
 	LastCall  time.Time    `json:"last_call"`
 	Title     string       `json:"title"`
 	Content   string       `json:"content"`
+	UserID    uint         `json:"user_id"`
+}
+
+type User struct {
+	ID        uint      `json:"id"`
+	Username  string    `json:"username"`
+	Email     string    `json:"email"`
+	CreatedAt time.Time `json:"created_at"`
 }

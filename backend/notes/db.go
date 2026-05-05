@@ -10,7 +10,6 @@ import (
 )
 
 func InitDB() {
-	// Читаем переменные окружения со значениями по умолчанию
 	host := os.Getenv("DB_HOST")
 	if host == "" {
 		host = "localhost"
@@ -47,6 +46,14 @@ func InitDB() {
 	}
 
 	createTableSQL := `
+	CREATE TABLE IF NOT EXISTS users (
+		id SERIAL PRIMARY KEY,
+		username VARCHAR(255) UNIQUE NOT NULL,
+		email VARCHAR(255) UNIQUE NOT NULL,
+		password_hash VARCHAR(255) NOT NULL,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+	);
+	
 	CREATE TABLE IF NOT EXISTS notes (
 		id SERIAL PRIMARY KEY,
 		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -54,13 +61,27 @@ func InitDB() {
 		deleted_at TIMESTAMP,
 		last_call TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 		title VARCHAR(255) NOT NULL,
-		content TEXT NOT NULL
+		content TEXT NOT NULL,
+		user_id INTEGER NOT NULL DEFAULT 1 REFERENCES users(id)
 	);
 	`
 
 	_, err = DB.Exec(createTableSQL)
 	if err != nil {
 		log.Fatal("Ошибка при создании таблицы:", err)
+	}
+
+	var userCount int
+	err = DB.QueryRow("SELECT COUNT(*) FROM users WHERE id = 1").Scan(&userCount)
+	if err == nil && userCount == 0 {
+		_, err := DB.Exec(`
+			INSERT INTO users (id, username, email, password_hash)
+			VALUES (1, 'default', 'default@example.com', '$2a$10$dummy')
+			ON CONFLICT (id) DO NOTHING
+		`)
+		if err != nil {
+			fmt.Println("⚠️ Не удалось создать default пользователя:", err)
+		}
 	}
 
 	fmt.Println("✅ Подключение к базе данных успешно!")
@@ -77,19 +98,21 @@ func AddNoteToDB(note Note) error {
 
 func AddNoteToDBAndReturn(note Note) (Note, error) {
 	insertSQL := `
-	INSERT INTO notes (title, content, last_call, created_at, updated_at)
-	VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-	RETURNING id, created_at, updated_at
+	INSERT INTO notes (title, content, user_id, last_call, created_at, updated_at)
+	VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+	RETURNING id, created_at, updated_at, user_id
 	`
 	var createdNote Note
 	createdNote.Title = note.Title
 	createdNote.Content = note.Content
 	createdNote.LastCall = note.LastCall
+	createdNote.UserID = note.UserID
 
-	err := DB.QueryRow(insertSQL, note.Title, note.Content).Scan(
+	err := DB.QueryRow(insertSQL, note.Title, note.Content, note.UserID).Scan(
 		&createdNote.ID,
 		&createdNote.CreatedAt,
 		&createdNote.UpdatedAt,
+		&createdNote.UserID,
 	)
 
 	return createdNote, err
@@ -97,7 +120,7 @@ func AddNoteToDBAndReturn(note Note) (Note, error) {
 
 func GetNoteFromDB(id uint, note *Note) error {
 	query := `
-	SELECT id, created_at, updated_at, deleted_at, last_call, title, content
+	SELECT id, created_at, updated_at, deleted_at, last_call, title, content, user_id
 	FROM notes
 	WHERE id = $1 AND deleted_at IS NULL
 	`
@@ -109,13 +132,14 @@ func GetNoteFromDB(id uint, note *Note) error {
 		&note.LastCall,
 		&note.Title,
 		&note.Content,
+		&note.UserID,
 	)
 	return err
 }
 
 func GetAllNotesFromDB() ([]Note, error) {
 	query := `
-	SELECT id, created_at, updated_at, deleted_at, last_call, title, content
+	SELECT id, created_at, updated_at, deleted_at, last_call, title, content, user_id
 	FROM notes
 	WHERE deleted_at IS NULL
 	ORDER BY id
@@ -137,6 +161,7 @@ func GetAllNotesFromDB() ([]Note, error) {
 			&note.LastCall,
 			&note.Title,
 			&note.Content,
+			&note.UserID,
 		)
 		if err != nil {
 			return nil, err
@@ -168,7 +193,6 @@ func UpdateNoteInDBAndReturn(note Note) (Note, error) {
 		return Note{}, err
 	}
 
-	// Получаем обновленную заметку из БД
 	var updatedNote Note
 	err = GetNoteFromDB(note.ID, &updatedNote)
 	return updatedNote, err
@@ -216,5 +240,66 @@ func GetNotesCountFromDB() (int64, error) {
 	`
 	var count int64
 	err := DB.QueryRow(query).Scan(&count)
+	return count, err
+}
+
+func GetAllNotesByUserID(userID uint) ([]Note, error) {
+	query := `
+	SELECT id, created_at, updated_at, deleted_at, last_call, title, content, user_id
+	FROM notes
+	WHERE user_id = $1 AND deleted_at IS NULL
+	ORDER BY id DESC
+	`
+	rows, err := DB.Query(query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var notes []Note
+	for rows.Next() {
+		var note Note
+		err := rows.Scan(
+			&note.ID,
+			&note.CreatedAt,
+			&note.UpdatedAt,
+			&note.DeletedAt,
+			&note.LastCall,
+			&note.Title,
+			&note.Content,
+			&note.UserID,
+		)
+		if err != nil {
+			return nil, err
+		}
+		notes = append(notes, note)
+	}
+
+	return notes, rows.Err()
+}
+
+func DeleteAllNotesByUserID(userID uint) (error, int) {
+	deleteSQL := `
+	UPDATE notes
+	SET deleted_at = CURRENT_TIMESTAMP
+	WHERE user_id = $1 AND deleted_at IS NULL
+	`
+	result, err := DB.Exec(deleteSQL, userID)
+	if err != nil {
+		return err, 0
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	return err, int(rowsAffected)
+}
+
+func GetNotesCountByUserID(userID uint) (int64, error) {
+	query := `
+	SELECT COUNT(*)
+	FROM notes
+	WHERE user_id = $1 AND deleted_at IS NULL
+	`
+	var count int64
+	err := DB.QueryRow(query, userID).Scan(&count)
 	return count, err
 }

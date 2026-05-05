@@ -7,10 +7,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// GetAllNotes - получить все заметки
-// GET /api/notes
 func GetAllNotes(c *gin.Context) {
-	notes, err := GetAllNotesFromDB()
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Неавторизованный доступ",
+		})
+		return
+	}
+
+	notes, err := GetAllNotesByUserID(userID.(uint))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Ошибка при загрузке заметок",
@@ -24,9 +30,15 @@ func GetAllNotes(c *gin.Context) {
 	})
 }
 
-// CreateNote - создать новую заметку
-// POST /api/notes
 func CreateNote(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Неавторизованный доступ",
+		})
+		return
+	}
+
 	var note Note
 
 	if err := c.ShouldBindJSON(&note); err != nil {
@@ -43,6 +55,7 @@ func CreateNote(c *gin.Context) {
 		return
 	}
 
+	note.UserID = userID.(uint)
 	createdNote, err := AddNoteToDBAndReturn(note)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -56,9 +69,15 @@ func CreateNote(c *gin.Context) {
 	})
 }
 
-// GetNoteByID - получить заметку по ID
-// GET /api/notes/:id
 func GetNoteByID(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Неавторизованный доступ",
+		})
+		return
+	}
+
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
@@ -77,19 +96,48 @@ func GetNoteByID(c *gin.Context) {
 		return
 	}
 
+	if note.UserID != userID.(uint) {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error": "Доступ запрещен",
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"data": note,
 	})
 }
 
-// UpdateNoteAPI - обновить заметку
-// PUT /api/notes/:id
 func UpdateNoteAPI(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Неавторизованный доступ",
+		})
+		return
+	}
+
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Неверный ID заметки",
+		})
+		return
+	}
+
+	var existingNote Note
+	err = GetNoteFromDB(uint(id), &existingNote)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Заметка не найдена",
+		})
+		return
+	}
+
+	if existingNote.UserID != userID.(uint) {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error": "Доступ запрещен",
 		})
 		return
 	}
@@ -132,14 +180,36 @@ func UpdateNoteAPI(c *gin.Context) {
 	})
 }
 
-// DeleteNoteByID - удалить заметку
-// DELETE /api/notes/:id
 func DeleteNoteByID(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Неавторизованный доступ",
+		})
+		return
+	}
+
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Неверный ID заметки",
+		})
+		return
+	}
+
+	var note Note
+	err = GetNoteFromDB(uint(id), &note)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Заметка не найдена",
+		})
+		return
+	}
+
+	if note.UserID != userID.(uint) {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error": "Доступ запрещен",
 		})
 		return
 	}
@@ -166,10 +236,16 @@ func DeleteNoteByID(c *gin.Context) {
 	})
 }
 
-// DeleteAllNotesHandler - удалить все заметки
-// DELETE /api/notes
 func DeleteAllNotesHandler(c *gin.Context) {
-	err, deletedCount := DeleteAllNotesFromDB()
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Неавторизованный доступ",
+		})
+		return
+	}
+
+	err, deletedCount := DeleteAllNotesByUserID(userID.(uint))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Ошибка при удалении заметок",
@@ -183,10 +259,16 @@ func DeleteAllNotesHandler(c *gin.Context) {
 	})
 }
 
-// GetStats - получить статистику
-// GET /api/stats
 func GetStats(c *gin.Context) {
-	count, err := GetNotesCountFromDB()
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Неавторизованный доступ",
+		})
+		return
+	}
+
+	count, err := GetNotesCountByUserID(userID.(uint))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Ошибка при получении статистики",

@@ -21,18 +21,14 @@ func main() {
 	notes.Reader = reader
 	notes.InitializeCacheFile()
 
-	// Запускаем очистку кэша в отдельной goroutine
 	go startCacheCleaner()
 
-	// Определяем режим запуска
 	var choice string
 
-	// Если переменная окружения APP_MODE установлена, используем её
 	appMode := os.Getenv("APP_MODE")
 	if appMode != "" {
 		choice = appMode
 	} else {
-		// Иначе спрашиваем пользователя
 		fmt.Println(`
 ╔════════════════════════════════════╗
 ║     Выберите режим запуска:        ║
@@ -70,11 +66,9 @@ func startCacheCleaner() {
 }
 
 func startAPIServer() {
-	// Используем ReleaseMode для минимального вывода
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 
-	// CORS middleware
 	router.Use(func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
@@ -88,30 +82,35 @@ func startAPIServer() {
 		c.Next()
 	})
 
-	// Группа маршрутов для API
-	api := router.Group("/api")
+	// Публичные endpoints для авторизации
+	auth := router.Group("/api/auth")
 	{
-		// GET все заметки
+		auth.POST("/register", notes.Register)
+		auth.POST("/login", notes.Login)
+	}
+
+	// Защищенные endpoints для заметок (требуют авторизацию)
+	api := router.Group("/api")
+	api.Use(notes.AuthMiddleware())
+	{
 		api.GET("/notes", notes.GetAllNotes)
-		// POST новую заметку
 		api.POST("/notes", notes.CreateNote)
-		// GET заметку по ID
 		api.GET("/notes/:id", notes.GetNoteByID)
-		// PUT обновить заметку
 		api.PUT("/notes/:id", notes.UpdateNoteAPI)
-		// DELETE удалить заметку
 		api.DELETE("/notes/:id", notes.DeleteNoteByID)
-		// DELETE удалить все заметки
 		api.DELETE("/notes", notes.DeleteAllNotesHandler)
-		// GET статистика
 		api.GET("/stats", notes.GetStats)
+		api.GET("/profile", notes.GetProfile)
 	}
 
 	fmt.Println("🚀 REST API сервер запущен на http://localhost:8080")
 	fmt.Println("📚 Доступные endpoints:")
-	fmt.Println("  GET    /api/notes          - получить все заметки")
-	fmt.Println("  POST   /api/notes          - создать новую заметку")
-	fmt.Println("  GET    /api/notes/:id      - получить заметку по ID")
+	fmt.Println("  POST   /api/auth/register - регистрация")
+	fmt.Println("  POST   /api/auth/login    - логин")
+	fmt.Println("  GET    /api/profile       - получить профиль (требует авторизацию)")
+	fmt.Println("  GET    /api/notes          - получить все заметки (требует авторизацию)")
+	fmt.Println("  POST   /api/notes          - создать новую заметку (требует авторизацию)")
+	fmt.Println("  GET    /api/notes/:id      - получить заметку по ID (требует авторизацию)")
 	fmt.Println("  PUT    /api/notes/:id      - обновить заметку")
 	fmt.Println("  DELETE /api/notes/:id      - удалить заметку")
 	fmt.Println("  DELETE /api/notes          - удалить все заметки")

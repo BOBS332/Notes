@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Note, NoteFormData } from './types';
 import { NoteForm } from './components/NoteForm';
 import { NotesList } from './components/NotesList';
+import { Auth } from './components/Auth';
 import * as api from './api';
 import './App.css';
 
@@ -12,10 +13,19 @@ export function App() {
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<any>(null);
 
-  // Загружаем заметки при загрузке компонента
+  // Проверяем авторизацию при загрузке компонента
   useEffect(() => {
-    loadNotes();
+    const token = localStorage.getItem('token');
+    const userInfo = localStorage.getItem('user');
+    
+    if (token && userInfo) {
+      setIsAuthenticated(true);
+      setUser(JSON.parse(userInfo));
+      loadNotes();
+    }
   }, []);
 
   const loadNotes = async () => {
@@ -24,6 +34,20 @@ export function App() {
     const loadedNotes = await api.getAllNotes();
     setNotes(loadedNotes);
     setIsLoading(false);
+  };
+
+  const handleLoginSuccess = (_token: string, userInfo: any) => {
+    setIsAuthenticated(true);
+    setUser(userInfo);
+    loadNotes();
+  };
+
+  const handleLogout = () => {
+    api.logout();
+    setIsAuthenticated(false);
+    setUser(null);
+    setNotes([]);
+    setEditingNote(null);
   };
 
   const handleAddNote = async (formData: NoteFormData) => {
@@ -98,11 +122,23 @@ export function App() {
     setEditContent('');
   };
 
+  if (!isAuthenticated) {
+    return <Auth onLoginSuccess={handleLoginSuccess} />;
+  }
+
   return (
     <div className="app">
       <header className="app-header">
-        <h1>📝 Notes App</h1>
-        <p className="subtitle">Управление заметками</p>
+        <div className="header-content">
+          <h1>📝 Notes App</h1>
+          <p className="subtitle">Управление заметками</p>
+        </div>
+        <div className="user-info">
+          <span className="username">👤 {user?.username}</span>
+          <button onClick={handleLogout} className="logout-btn">
+            Logout
+          </button>
+        </div>
       </header>
 
       <main className="app-main">

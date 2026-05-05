@@ -25,7 +25,7 @@ LearningGo/
 
 ### С Docker (рекомендуется)
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 - Backend: `http://localhost:8080`
 - Frontend: `http://localhost:3000`

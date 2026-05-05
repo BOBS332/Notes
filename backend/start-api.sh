@@ -20,6 +20,14 @@ echo ""
 echo "════════════════════════════════════════════"
 echo ""
 
+# Устанавливаем переменные окружения для подключения к БД
+export DB_HOST=localhost
+export DB_PORT=5432
+export DB_USER=postgres
+export DB_PASSWORD=newpassword
+export DB_NAME=test
+export APP_MODE=2
+
 # Передаём "2" для режима API (без фона, в текущем терминале)
 ./learninggo << 'EOF'
 2
